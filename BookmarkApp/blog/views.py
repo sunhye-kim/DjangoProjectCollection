@@ -25,10 +25,10 @@ class PostAV(ArchiveIndexView): # 테이블로부터 객체 리스트를 가져�
     model = Post
     date_field = 'modify_dt' # 변경 날짜가 최근인 포스트를 먼저 출력
 
-class PostYAV(YearArchiveView):
+class PostYAV(YearArchiveView): # 날짜 필드의 연도를 기준으로 객체 리스트를 가져와 객체들이 속한 월을 리스트로 출력, 날짜 필드의 연도 파라미터는 URLconf에서 추출해 뷰로 넘겨줌
     model = Post
-    date_field = 'modify_dt'
-    make_object_list = True
+    date_field = 'modify_dt' # 기준이 되는 필드
+    make_object_list = True # 해당 연도에 해당하는 객체의 리스트를 만들어서 템플릿에 넘겨줌, 템플릿 파일에서 object_list 컨텍스트 변수 사용 가능. default = False
 
 class PostMAV(MonthArchiveView):
     model = Post
