@@ -28,3 +28,4 @@ urlpatterns = [
     #Example: /blog/archive/today/
     path('archive/today/', views.PostTAV.as_view(), name='post_today_archive'),
 ]
+
