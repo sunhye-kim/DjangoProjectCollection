@@ -1,3 +1,4 @@
+from os import stat
 from django.http import Http404
 from django.db import transaction
 from django.utils import timezone
@@ -17,66 +18,69 @@ from drf_yasg             import openapi
 import json
 
 class CafeList(APIView):
-    @swagger_auto_schema(tags=['카페 데이터 저장하기'], request_body=CafeSerializers)
-    @transaction.atomic
-    def post(self, request):
-        try:
-            r_data = json.loads(request.body)
-            r_cafe_name_kor = r_data['name_kor']
-            r_cafe_name_eng = r_data['name_eng']
-            r_open_time = r_data['open_time']
-            r_tel_num = r_data['tel_num']
-            
-        except:
-            return Response({"message": "Check parameters"}, status=status.HTTP_400_BAD_REQUEST)
+    # @swagger_auto_schema(tags=['카페 데이터 저장하기'], request_body=CafeSerializers)
+    # @transaction.atomic
+    # def post(self, request):
+    #     try:
+    #         r_data = json.loads(request.body)
+    #         r_cafe_name_kor = r_data['name_kor']
+    #         r_cafe_name_eng = r_data['name_eng']
+    #         r_open_time = r_data['open_time']
+    #         r_tel_num = r_data['tel_num']
 
-        # 데이터 존재 여부 확인
-        # cafe_data_data = (Cafe.objects.
-        #                             filter(Q(type=r_type) & Q(name=r_name)))
+    #     except:
+    #         return Response({"message": "Check parameters"}, status=status.HTTP_400_BAD_REQUEST)
 
-        cafe_data = Cafe()
-        cafe_data.name_kor = r_cafe_name_kor
-        cafe_data.name_eng = r_cafe_name_eng
-        cafe_data.tel_num = r_tel_num
-        cafe_data.open_time = r_open_time
-        cafe_data.create_dt = timezone.now()
-        cafe_data.modify_dt = timezone.now()
+    #     # 데이터 존재 여부 확인
+    #     # cafe_data_data = (Cafe.objects.
+    #     #                             filter(Q(type=r_type) & Q(name=r_name)))
 
-        cafe_data.save()
+    #     cafe_data = Cafe()
+    #     cafe_data.name_kor = r_cafe_name_kor
+    #     cafe_data.name_eng = r_cafe_name_eng
+    #     cafe_data.tel_num = r_tel_num
+    #     cafe_data.open_time = r_open_time
+    #     cafe_data.create_dt = timezone.now()
+    #     cafe_data.modify_dt = timezone.now()
+
+    #     cafe_data.save()
 
  
-        return_data = {
-            "detail": "success",
-            "status" : 200
-        }
+    #     return_data = {
+    #         "detail": "success",
+    #         "status" : 200
+    #     }
         
-        return Response(return_data, status = status.HTTP_201_CREATED)
+    #     return Response(return_data, status = status.HTTP_201_CREATED)
 
-        user_serializer = CafeSerializers(data=request.data) #Request의 data를 UserSerializer로 변환
 
-        print(user_serializer)
-        if user_serializer.is_valid():
-            user_serializer.save() #UserSerializer의 유효성 검사를 한 뒤 DB에 저장
-            return Response(user_serializer.data, status=status.HTTP_201_CREATED) #client에게 JSON response 전달
+    @swagger_auto_schema(operation_summary='카페 데이터 저장하기',
+        operation_description="""
+            카페 데이터 저장저장저장저앙
+            """,
+        tags=['cafe'], 
+        request_body=CafeSerializers
+    )
+    @transaction.atomic
+    def post(self, request, format=None):
+        post_serializer = CafeSerializers(data=request.data)
+        if post_serializer.is_valid():
+            return Response(status = status.HTTP_201_CREATED)
         else:
-            return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(post_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # serializer = CafeSerializers(data=request.data)
-
-        # print("**********************************", serializer)
-
-        # if serializer.is_valid():
-        #     serializer.save()
-        #     return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
-        # return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
-
-
+    @swagger_auto_schema(operation_summary='카페 데이터 가져와가ㅏ져와',
+        operation_description="""
+            카페 데이터 가져오기
+            """,
+        tags=['cafe']
+    )
     def get(self, request):
         queryset = Cafe.objects.all()
         serializer = CafeSerializers(queryset, many=True)
 
         return Response(serializer.data)
+
 
 class CafeDetailView(APIView):
     def get_object(self, cafe_no):

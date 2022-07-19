@@ -1,3 +1,4 @@
+from email.policy import default
 from django.db import models
 
 class Cafe(models.Model):
@@ -6,6 +7,7 @@ class Cafe(models.Model):
     tel_num = models.CharField('Tel', max_length=20)
     open_time = models.JSONField('OpenTime', default=dict)
     sns_url = models.CharField('SNS', max_length=100)
+    is_operated = models.BooleanField('isOperated', default=True)
     create_dt = models.DateTimeField('CREATE DATE', auto_now_add=True)
     modify_dt = models.DateTimeField('MODIFY DATE', auto_now=True)
 
