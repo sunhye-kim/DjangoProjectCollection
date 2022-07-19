@@ -9,6 +9,12 @@ class Cafe(models.Model):
     create_dt = models.DateTimeField('CREATE DATE', auto_now_add=True)
     modify_dt = models.DateTimeField('MODIFY DATE', auto_now=True)
 
+    class Meta:
+        db_table = 'cafe_main'
+        ordering = ('-modify_dt',)
+        verbose_name = 'Cafe Name'
+        verbose_name_plural = 'Cafe Names'
+
 
 class Menu(models.Model):
     cafe_no = models.IntegerField('CAFE NO', blank=False)
