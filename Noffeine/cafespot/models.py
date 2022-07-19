@@ -9,16 +9,6 @@ class Cafe(models.Model):
     create_dt = models.DateTimeField('CREATE DATE', auto_now_add=True)
     modify_dt = models.DateTimeField('MODIFY DATE', auto_now=True)
 
-    class Meta:
-        db_table = 'cafe_main'
-        ordering = ('-modify_dt',)
-        verbose_name = 'Cafe Name'
-        verbose_name_plural = 'Cafe Names'
-        
-    # 이걸 지정하지 않으면 레코드명이 제대로 표현되지 않음
-    def __str__(self):
-        return self.name_kor
-
 
 class Menu(models.Model):
     cafe_no = models.IntegerField('CAFE NO', blank=False)
@@ -30,8 +20,8 @@ class Menu(models.Model):
     class Meta:
         db_table = 'menu_main'
         ordering = ('-modify_dt',)
-        verbose_name = 'Menu Name'
-        verbose_name_plural = 'Menu Names'
+        verbose_name = 'Menu Name' # 테이블 단수 별칭
+        verbose_name_plural = 'Menu Names' # 테이블 복수 별칭
 
 class CafeAddress(models.Model):
     cafe_no = models.IntegerField('CAFE NO', blank=False)

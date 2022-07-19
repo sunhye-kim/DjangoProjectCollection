@@ -1,9 +1,9 @@
 from django.urls import path
-from django.views.generic import ListView, DetailView
-from cafespot.views import CafeLV, CafeDV
-from cafespot.models import Cafe
+from .models import Cafe
+from . import views
 
 urlpatterns = [
-    path('cafe/', ListView.as_view(model=Cafe), name='index'),
-    path('cafe/<int:pk>', DetailView.as_view(model=Cafe), name='detail'),
+    path('', views.CafeList.as_view(), name='index'),
+    path('<int:cafe_no>/', views.CafeList.as_view())
+    # path('<int:pk>', views.CafeDetail.as_view(model=Cafe), name='detail'),
 ]
