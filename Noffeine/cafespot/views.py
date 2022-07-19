@@ -1,3 +1,8 @@
-from django.shortcuts import render
+from django.views.generic import ListView, DetailView
+from cafespot.models import Cafe, Menu, CafeAddress
 
-# Create your views here.
+class CafeLV(ListView):
+    model = Cafe
+
+class CafeDV(DetailView):
+    model = Cafe
