@@ -1,3 +1,45 @@
 from django.db import models
 
-# Create your models here.
+class Cafe(models.Model):
+    name_kor = models.CharField('CafeName(kor)', max_length=100,blank=False)
+    name_eng = models.CharField('CafeName(eng)', max_length=100, blank=False)
+    tel_num = models.CharField('Tel', max_length=20)
+    open_time = models.JSONField('OpenTime', default=dict)
+    sns_url = models.CharField('SNS', max_length=100)
+    create_dt = models.DateTimeField('CREATE DATE', auto_now_add=True)
+    modify_dt = models.DateTimeField('MODIFY DATE', auto_now=True)
+
+    class Meta:
+        db_table = 'cafe_main'
+        ordering = ('-modify_dt',)
+        verbose_name = 'Cafe Name'
+        verbose_name_plural = 'Cafe Names'
+        
+    # 이걸 지정하지 않으면 레코드명이 제대로 표현되지 않음
+    def __str__(self):
+        return self.name_kor
+
+
+class Menu(models.Model):
+    cafe_no = models.IntegerField('CAFE NO', blank=False)
+    menu_name = models.CharField('Menu', max_length=50, blank=False)
+    price = models.IntegerField('PRICE', blank=False)
+    create_dt = models.DateTimeField('CREATE DATE', auto_now_add=True)
+    modify_dt = models.DateTimeField('MODIFY DATE', auto_now=True)
+
+    class Meta:
+        db_table = 'menu_main'
+        ordering = ('-modify_dt',)
+        verbose_name = 'Menu Name'
+        verbose_name_plural = 'Menu Names'
+
+class CafeAddress(models.Model):
+    cafe_no = models.IntegerField('CAFE NO', blank=False)
+    state = models.CharField('State', max_length=30, blank=False)
+    city = models.CharField('City', max_length=30, blank=False)
+    county = models.CharField('County', max_length=30, blank=False)
+    detail_addr = models.CharField('DetailAddr', max_length=50, blank=False)
+
+    class Meta:
+        db_table = 'cafe_address'
+        ordering = ('-cafe_no',)
