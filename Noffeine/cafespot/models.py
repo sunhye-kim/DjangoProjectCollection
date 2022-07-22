@@ -31,6 +31,7 @@ class Menu(models.Model):
         verbose_name = 'Menu Name' # 테이블 단수 별칭
         verbose_name_plural = 'Menu Names' # 테이블 복수 별칭
 
+
 class CafeAddress(models.Model):
     cafe_no = models.IntegerField('CAFE NO', blank=False)
     state = models.CharField('State', max_length=30, blank=False)
