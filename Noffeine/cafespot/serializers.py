@@ -1,6 +1,3 @@
-from dataclasses import fields
-from email.policy import default
-from wsgiref import validate
 from rest_framework import serializers
 from .models import Cafe
 
@@ -20,9 +17,9 @@ class CafeSerializers(serializers.Serializer):
         model = Cafe 
         fields = '__all__'
         
-    # # 이걸 지정하지 않으면 레코드명이 제대로 표현되지 않음
-    # def __str__(self):
-    #     return self.name_kor
+    # 이걸 지정하지 않으면 레코드명이 제대로 표현되지 않음
+    def __str__(self):
+        return self.name_kor
     
     def create(self, validated_data):
         print("create@@")

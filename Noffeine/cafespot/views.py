@@ -4,6 +4,7 @@ from django.http import Http404
 from django.db import transaction
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.core.paginator import Paginator
 
 from requests import Response
 import requests
@@ -18,6 +19,7 @@ from drf_yasg.utils       import swagger_auto_schema
 from drf_yasg             import openapi 
 
 import json
+import traceback
 
 class CafeList(APIView):
     @swagger_auto_schema(operation_summary='카페 데이터 저장하기',
@@ -29,6 +31,14 @@ class CafeList(APIView):
     )
     @transaction.atomic
     def post(self, request, format=None):
+        # try:
+        #     r_data = json.loads(request.data)
+        #     name_kor = r_data['name_kor']
+        #     name_eng = r_data['name_eng']
+        # except:
+        #     print(traceback.format_exc())
+        #     return Response({"message": "Check parameters"}, status=status.HTTP_400_BAD_REQUEST)
+
         post_serializer = CafeSerializers(data=request.data)
         # print(post_serializer)
         if post_serializer.is_valid():
@@ -44,9 +54,14 @@ class CafeList(APIView):
         tags=['cafe']
     )
     def get(self, request):
-        queryset = Cafe.objects.all()
+        page = request.GET.get("page", 1)
+        page = int(page or 1)
+        page_size = 1
+        limit_cnt = page_size * page
+        offset_cnt = limit_cnt - page_size
+
+        queryset = Cafe.objects.all()[offset_cnt:limit_cnt]
         serializer = CafeSerializers(queryset, many=True)
-        print(serializer.data)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
