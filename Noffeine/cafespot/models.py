@@ -33,7 +33,7 @@ class Menu(models.Model):
 
 
 class CafeAddress(models.Model):
-    cafe_no = models.IntegerField('CAFE NO', blank=False)
+    cafe_no = models.ForeignKey('Cafe', on_delete=models.CASCADE)
     state = models.CharField('State', max_length=30, blank=False)
     city = models.CharField('City', max_length=30, blank=False)
     county = models.CharField('County', max_length=30, blank=False)
