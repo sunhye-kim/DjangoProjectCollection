@@ -18,8 +18,6 @@ from . import serializers
 from drf_yasg.utils       import swagger_auto_schema
 from drf_yasg             import openapi 
 
-import json
-import traceback
 
 class CafeLV(APIView):
     @swagger_auto_schema(operation_summary='카페 데이터 가져와가ㅏ져와',
@@ -79,7 +77,6 @@ class CafeDetailView(APIView):
             update_serial.errors, 
             status = status.HTTP_400_BAD_REQUEST)
 
-    
     @swagger_auto_schema(tags=['지정한 데이터의 상세 정보를 삭제합니다.'], responses={200: 'Success'})
     def delete(self, request, cafe_no):
         post = self.get_object(cafe_no)
@@ -90,7 +87,7 @@ class CafeDetailView(APIView):
 class CafeMenuLV(APIView):
     def get(self, request, cafeno, format=None):
         cafe_lv = get_object_or_404(Cafe, cafe_no=cafeno)
-        serializer = serializers.CafeMenuSerializer(cafe_lv)
+        serializer = serializers.MenuSerializer(cafe_lv)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -98,12 +95,12 @@ class CafeMenuLV(APIView):
 class CafeMenuDV(APIView):
     def get(self, request, cafeno, menuname, format=None):
         cafe_dv = get_object_or_404(Cafe, cafe_no=cafeno, menu_name=menuname)
-        serializer = serializers.CafeMenuSerializer(cafe_dv)
+        serializer = serializers.MenuSerializer(cafe_dv)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
-        post_serializer = serializers.CafeMenuSerializer(data=request.data)
+        post_serializer = serializers.MenuSerializer(data=request.data)
         if post_serializer.is_valid():
             post_serializer.save()
             return Response(post_serializer.data, status = status.HTTP_201_CREATED)
@@ -117,7 +114,7 @@ class CafeMenuDV(APIView):
             menu_id = kwargs.get('id')
             user_object = Menu.objects.get(id=menu_id)
  
-            update_user_serializer = serializers.CafeMenuSerializer(user_object, data=request.data)
+            update_user_serializer = serializers.MenuSerializer(user_object, data=request.data)
             if update_user_serializer.is_valid():
                 update_user_serializer.save()
                 return Response(update_user_serializer.data, status=status.HTTP_200_OK)

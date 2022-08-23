@@ -19,7 +19,7 @@ class Cafe(models.Model):
 
 
 class Menu(models.Model):
-    cafe_no = models.IntegerField('CAFE NO', blank=False)
+    cafe_no = models.ForeignKey('CAFE NO', on_delete=models.DO_NOTHING, related_name="Cafe", primary_key=True, db_column="cafe_no")
     menu_name = models.CharField('Menu', max_length=50, blank=False)
     price = models.IntegerField('PRICE', blank=False)
     create_dt = models.DateTimeField('CREATE DATE', auto_now_add=True)
@@ -33,7 +33,12 @@ class Menu(models.Model):
 
 
 class CafeAddress(models.Model):
-    cafe_no = models.ForeignKey('Cafe', on_delete=models.CASCADE)
+    # related_name : 추상 모델에서 관계를 정의할 때 사용
+    # on_delete : 외래키가 바라보는 테이블의 값이 삭제될 때
+    #   models.DO_NOTHING - 과거 데이터 유지하기 위해서 CASCADE 사용하지 않음
+    # db_column : 테이블에 정의될 이름
+    cafe_no = models.ForeignKey('Cafe', on_delete=models.DO_NOTHING, related_name="Cafe", primary_key=True, db_column="cafe_no")
+    
     state = models.CharField('State', max_length=30, blank=False)
     city = models.CharField('City', max_length=30, blank=False)
     county = models.CharField('County', max_length=30, blank=False)
