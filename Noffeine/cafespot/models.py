@@ -6,7 +6,7 @@ class CafeMain(models.Model):
     name = models.CharField('CafeName(Main)', max_length=165, blank=False)
     # name_eng = models.CharField('CafeName(eng)', max_length=100, blank=False)
     is_operated = models.BooleanField('isOperated', default=True)
-    is_franchised = models.BBooleanField('isFranchised', default=False)
+    is_franchised = models.BooleanField('isFranchised', default=False)
     phone = models.CharField('phone', max_length=20)
     # tel_num = models.CharField('Tel', max_length=20)
     hours = models.JSONField('OpenTime', default=dict)
