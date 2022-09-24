@@ -21,7 +21,8 @@ class CafeMain(models.Model):
 
 
 class CafeFranchise(models.Model):
-    cafe_id = models.ForeignKey(CafeMain, primary_key=True, on_delete=models.DO_NOTHING, related_name='cafe_franchise', db_column='cafe_id')
+    # cafe_id = models.ForeignKey(CafeMain, primary_key=True, on_delete=models.DO_NOTHING, related_name='cafe_franchise', db_column='cafe_id')
+    cafe_id = models.IntegerField(primary_key=True)
     branch_name = models.CharField('Menu', max_length=50, blank=False)
     create_dt = models.DateTimeField('CREATE DATE', auto_now_add=True)
     modify_dt = models.DateTimeField('MODIFY DATE', auto_now=True)
@@ -34,7 +35,8 @@ class CafeFranchise(models.Model):
 
 
 class CafeMenu(models.Model):
-    cafe_id = models.ForeignKey(CafeMain, primary_key=True, on_delete=models.DO_NOTHING, related_name='cafe_menu', db_column='cafe_id')
+    # cafe_id = models.ForeignKey(CafeMain, primary_key=True, on_delete=models.DO_NOTHING, related_name='cafe_menu', db_column='cafe_id')
+    cafe_id = models.IntegerField(primary_key=True)
     menu_name = models.CharField('Menu', max_length=50, blank=False)
     price = models.IntegerField('PRICE', blank=False)
     create_dt = models.DateTimeField('CREATE DATE', auto_now_add=True)
@@ -48,7 +50,8 @@ class CafeMenu(models.Model):
 
 
 class CafeMenuImage(models.Model):
-    cafe_id = models.ForeignKey(CafeMain, primary_key=True, on_delete=models.DO_NOTHING, related_name='cafe_menu_image', db_column='cafe_id')
+    # cafe_id = models.ForeignKey(CafeMain, primary_key=True, on_delete=models.DO_NOTHING, related_name='cafe_menu_image', db_column='cafe_id')
+    cafe_id = models.IntegerField(primary_key=True)
     image_url = models.CharField('Menu', max_length=2000, blank=False)
     create_dt = models.DateTimeField('CREATE DATE', auto_now_add=True)
     modify_dt = models.DateTimeField('MODIFY DATE', auto_now=True)
@@ -66,7 +69,8 @@ class CafeAddress(models.Model):
     #   models.DO_NOTHING - 과거 데이터 유지하기 위해서 CASCADE 사용하지 않음
     # db_column : 테이블에 정의될 이름
 
-    cafe_id = models.ForeignKey(CafeMain, primary_key=True, on_delete=models.DO_NOTHING, related_name="cafe_address", db_column="cafe_id")
+    # cafe_id = models.ForeignKey(CafeMain, primary_key=True, on_delete=models.DO_NOTHING, related_name="cafe_address", db_column="cafe_id")
+    cafe_id = models.IntegerField(primary_key=True)
     latitude = models.DecimalField(max_digits=6, decimal_places=2)
     longitude = models.DecimalField(max_digits=6, decimal_places=2)
     sido = models.CharField('시도', max_length=40, blank=False)
