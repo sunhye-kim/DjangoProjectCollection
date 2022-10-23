@@ -1,31 +1,20 @@
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 
-from requests import Response
 from rest_framework import status, viewsets
-from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-import ast
+from drf_yasg.utils import swagger_auto_schema
 
 from .models import CafeAddress, CafeMain, CafeMenu
 from . import serializers
-
-from drf_yasg.utils       import swagger_auto_schema
-from drf_yasg             import openapi 
-
-class CafeViewSet(viewsets.ModelViewSet):
-    queryset = CafeMain.objects.all()
-    serializer_class = serializers.CafeSerializers
-
 
 
 class CafeLV(APIView):
     def __init__(self):
         self.default_page = "1"
         self.default_page_size = "10"
-    
 
     def get_object(self, cafe_no):
         try:
@@ -33,53 +22,46 @@ class CafeLV(APIView):
         except CafeMain.DoesNotExist:
             return Http404
 
+    def check_numeric(self, checked_data):
+        if checked_data.isnumeric():
+            return int(checked_data)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
     """
     HTTP Method : GET
     Parameter Example : 
         http://127.0.0.1:8000/cafespot/?page=1&page_size=10
     """
-    @swagger_auto_schema(operation_summary='카페 전체 데이터 리스트',
+
+    @swagger_auto_schema(
+        operation_summary="카페 전체 데이터 리스트",
         operation_description="""
             카페 리스트 데이터 가져오기
-            """,
-        tags=['cafe']
+        """,
+        tags=["cafe"],
     )
     def get(self, request):
-        page = request.GET.get("page", self.default_page)
-        page_size = request.GET.get("page_size", self.default_page_size)
+        page = request.GET.get("page", self.default_page)  # 페이지 번호
+        page_size = request.GET.get(
+            "page_size", self.default_page_size
+        )  # 한 페이지에 보여줄 데이터 개수
 
-        # 숫자 에러 처리
-        if page.isnumeric():
-            page = int(page or 1)
-        else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        # str -> int 형변환
+        offset_cnt = 10 * (self.check_numeric(page) - 1)
+        limit_cnt = self.check_numeric(page_size)
 
-        if page_size.isnumeric():
-            page_size = int(page_size or 10)
-        else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        # 주소 데이터가 없는 경우 처리를 해야함
+        queryset = CafeMain.objects.select_related("cafe_address")[
+            offset_cnt : offset_cnt + limit_cnt
+        ]
+        # print(queryset.query)
 
-        limit_cnt = page_size * page
-        offset_cnt = limit_cnt - page_size
-
-        """
-            주소 데이터가 없는 경우 처리를 해야함
-        """
-        # Product.objects.select_related('sub_category__main_category').filter(main_category_id=1)
-        queryset = CafeMain.objects.select_related('cafe_address__cafe_id', 'cafe_franchise__cafe_id')
-        print("############### query set")
-        print(queryset)
-        for _queryset in queryset:
-            _queryset.cafe_address
-            
         serializer = serializers.CafeSerializers(queryset, many=True)
 
-        # queryset = CafeMain.objects.all()[offset_cnt:limit_cnt]
-        # serializer = serializers.CafeSerializers(queryset, many=True)
-
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
-    '''
+
+    """
     HTTP Method : POST
     Parameter Example : 
         {
@@ -116,18 +98,23 @@ class CafeLV(APIView):
                 }
             ]
         }
-    '''
-    @swagger_auto_schema(tags=['카페 데이터를 추가 합니다.'], responses={200: 'Success'}, request_body=serializers.CafeSerializers)
+    """
+
+    @swagger_auto_schema(
+        tags=["카페 데이터를 추가 합니다."],
+        responses={200: "Success"},
+        request_body=serializers.CafeSerializers,
+    )
     def post(self, request):
         data = request.data
 
         # 프랜차이즈라고 표기했으나 프랜차이즈 데이터가 없는 경우
-        if data['is_franchise'] == True and not data.get('franchise'):
+        if data["is_franchise"] == True and not data.get("franchise"):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         # sub_name 3개 이상 저장되었을 때 에러 처리
-        if data.get('sub_names'):
-            sub_names = data.get('sub_names')
+        if data.get("sub_names"):
+            sub_names = data.get("sub_names")
             if len(sub_names) > 3:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -135,43 +122,48 @@ class CafeLV(APIView):
 
         if cafemain_serializer.is_valid():
             cafemain_serializer.save()
-        else: # 카페 메인 데이터가 저장되지 않으면 에러 띄우고 종료
-            return JsonResponse(cafemain_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        cafe_id = int(cafemain_serializer.data['cafe_id'])
+        else:  # 카페 메인 데이터가 저장되지 않으면 에러 띄우고 종료
+            return JsonResponse(
+                cafemain_serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
-        if data.get('address'):
-            cafeaddress_data = data.get('address')
-            cafeaddress_data['cafe_id'] = cafe_id
+        cafe_id = int(cafemain_serializer.data["cafe_id"])
+
+        if data.get("address"):
+            cafeaddress_data = data.get("address")
+            cafeaddress_data["cafe_id"] = cafe_id
             print(cafeaddress_data)
-            cafeaddress_serializer = serializers.CafeAddressSerializer(data=cafeaddress_data)
+            cafeaddress_serializer = serializers.CafeAddressSerializer(
+                data=cafeaddress_data
+            )
             if cafeaddress_serializer.is_valid():
                 cafeaddress_serializer.save()
-            else: # 주소 데이터에서 에러나면 main 데이터 삭제
+            else:  # 주소 데이터에서 에러나면 main 데이터 삭제
                 cafe_main = self.get_object(cafe_id)
                 cafe_main.delete()
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-        
 
-        if data.get('sub_names'):
+        if data.get("sub_names"):
             # 서브네임 여러개일 때 처리
             for _sub_name in sub_names:
                 cafe_sub_name_data = _sub_name
-                cafe_sub_name_data['cafe_id'] = cafe_id
-                cafesubname_serializer = serializers.CafeSubNameSerializer(data=cafe_sub_name_data)
+                cafe_sub_name_data["cafe_id"] = cafe_id
+                cafesubname_serializer = serializers.CafeSubNameSerializer(
+                    data=cafe_sub_name_data
+                )
                 if cafesubname_serializer.is_valid():
                     cafesubname_serializer.save()
 
-
-        if data.get('franchise'):
-            data['franchise']['cafe_id'] = cafe_id
-            cafefranchise_serializer = serializers.CafeFranchiseSerializers(data=data['franchise'])
+        if data.get("franchise"):
+            data["franchise"]["cafe_id"] = cafe_id
+            cafefranchise_serializer = serializers.CafeFranchiseSerializers(
+                data=data["franchise"]
+            )
 
             if cafefranchise_serializer.is_valid():
                 cafefranchise_serializer.save()
 
         return Response(cafemain_serializer.data, status=status.HTTP_201_CREATED)
-
 
 
 class CafeDetailView(APIView):
@@ -180,30 +172,32 @@ class CafeDetailView(APIView):
             return CafeMain.objects.get(pk=cafe_no)
         except CafeMain.DoesNotExist:
             return Http404
-    
-    @swagger_auto_schema(tags=['지정한 데이터의 상세 정보를 불러옵니다.'], responses={200: 'Success'})
+
+    @swagger_auto_schema(tags=["지정한 데이터의 상세 정보를 불러옵니다."], responses={200: "Success"})
     def get(self, request, cafe_no):
         cafe_data = self.get_object(cafe_no)
         data_serial = serializers.CafeSerializers(cafe_data)
         return Response(data_serial.data)
 
-    @swagger_auto_schema(tags=['지정한 데이터의 상세 정보를 수정합니다.'], responses={200: 'Success'}, request_body=serializers.CafeSerializers)
+    @swagger_auto_schema(
+        tags=["지정한 데이터의 상세 정보를 수정합니다."],
+        responses={200: "Success"},
+        request_body=serializers.CafeSerializers,
+    )
     def put(self, request, cafe_no):
         cafe_data = self.get_object(cafe_no)
 
-        #수정할  인스턴스, 수정할 내용
-        update_serial  = serializers.CafeSerializers(cafe_data, data=request.data)
+        # 수정할  인스턴스, 수정할 내용
+        update_serial = serializers.CafeSerializers(cafe_data, data=request.data)
 
         if update_serial.is_valid():
             # save()를 통해 serializer의 update()메소드 실행,
             # DB 인스턴스 업데이트
             update_serial.save()
-            return Response(update_serial.data, status = status.HTTP_201_CREATED)
-        return Response(
-            update_serial.errors, 
-            status = status.HTTP_400_BAD_REQUEST)
+            return Response(update_serial.data, status=status.HTTP_201_CREATED)
+        return Response(update_serial.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(tags=['지정한 데이터의 상세 정보를 삭제합니다.'], responses={200: 'Success'})
+    @swagger_auto_schema(tags=["지정한 데이터의 상세 정보를 삭제합니다."], responses={200: "Success"})
     def delete(self, request, cafe_no):
         post = self.get_object(cafe_no)
         post.delete()
@@ -224,23 +218,25 @@ class CafeMenuDV(APIView):
         serializer = serializers.MenuSerializer(cafe_dv)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
     def post(self, request):
         post_serializer = serializers.MenuSerializer(data=request.data)
         if post_serializer.is_valid():
             post_serializer.save()
-            return Response(post_serializer.data, status = status.HTTP_201_CREATED)
+            return Response(post_serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(post_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request, **kwargs):
-        if kwargs.get('id') is None:
+        if kwargs.get("id") is None:
             return Response("invalid request", status=status.HTTP_400_BAD_REQUEST)
         else:
-            menu_id = kwargs.get('id')
+            menu_id = kwargs.get("id")
             user_object = CafeMenu.objects.get(id=menu_id)
- 
-            update_user_serializer = serializers.MenuSerializer(user_object, data=request.data)
+
+            update_user_serializer = serializers.MenuSerializer(
+                user_object, data=request.data
+            )
             if update_user_serializer.is_valid():
                 update_user_serializer.save()
                 return Response(update_user_serializer.data, status=status.HTTP_200_OK)
@@ -248,10 +244,10 @@ class CafeMenuDV(APIView):
                 return Response("invalid request", status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, **kwargs):
-        if kwargs.get('id') is None:
+        if kwargs.get("id") is None:
             return Response("invalid request", status=status.HTTP_400_BAD_REQUEST)
         else:
-            menu_id = kwargs.get('id')
+            menu_id = kwargs.get("id")
             user_object = CafeMenu.objects.get(id=menu_id)
             user_object.delete()
             return Response("test ok", status=status.HTTP_200_OK)
@@ -269,7 +265,7 @@ class CafeAddressDV(APIView):
 
         else:
             return Response("invalid request", status=status.HTTP_400_BAD_REQUEST)
-    
+
     """
     HTTP Method : POST
     Parameter Example : 
@@ -281,23 +277,26 @@ class CafeAddressDV(APIView):
             "detail_addr": "무궁화로 237"
         }
     """
+
     def post(self, request):
         print(request)
         post_serializer = serializers.CafeAddressSerializer(data=request.data)
         if post_serializer.is_valid():
             post_serializer.save()
-            return Response(post_serializer.data, status = status.HTTP_201_CREATED)
+            return Response(post_serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(post_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request, **kwargs):
-        if kwargs.get('cafe_no') is None:
+        if kwargs.get("cafe_no") is None:
             return Response("invalid request", status=status.HTTP_400_BAD_REQUEST)
         else:
-            cafe_no = kwargs.get('cafe_no')
+            cafe_no = kwargs.get("cafe_no")
             user_object = CafeAddress.objects.get(id=cafe_no)
- 
-            update_user_serializer = serializers.CafeAddressSerializer(user_object, data=request.data)
+
+            update_user_serializer = serializers.CafeAddressSerializer(
+                user_object, data=request.data
+            )
             if update_user_serializer.is_valid():
                 update_user_serializer.save()
                 return Response(update_user_serializer.data, status=status.HTTP_200_OK)
@@ -305,10 +304,10 @@ class CafeAddressDV(APIView):
                 return Response("invalid request", status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, **kwargs):
-        if kwargs.get('cafe_no') is None:
+        if kwargs.get("cafe_no") is None:
             return Response("invalid request", status=status.HTTP_400_BAD_REQUEST)
         else:
-            cafe_no = kwargs.get('cafe_no')
+            cafe_no = kwargs.get("cafe_no")
             cafe_address_object = CafeAddress.objects.get(id=cafe_no)
             cafe_address_object.delete()
             return Response("test ok", status=status.HTTP_200_OK)
