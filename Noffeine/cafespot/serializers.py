@@ -31,6 +31,13 @@ class CafeSerializers(serializers.ModelSerializer):
     #     return super(CafeSerializers, self).to_representation(instance)
 
 
+class CafeSubNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CafeSubName
+        # fields = ('cafe_no', 'name_kor', 'name_eng', 'tel_num', 'open_time', 'sns_url', )
+        fields = '__all__'
+
+
 class CafeFranchiseSerializers(serializers.ModelSerializer):
     class Meta:
         model = models.CafeFranchise

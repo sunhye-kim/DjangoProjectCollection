@@ -2,12 +2,12 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 
 from requests import Response
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-import json
+import ast
 
 from .models import CafeAddress, CafeMain, CafeMenu
 from . import serializers
@@ -15,11 +15,23 @@ from . import serializers
 from drf_yasg.utils       import swagger_auto_schema
 from drf_yasg             import openapi 
 
+class CafeViewSet(viewsets.ModelViewSet):
+    queryset = CafeMain.objects.all()
+    serializer_class = serializers.CafeSerializers
+
+
 
 class CafeLV(APIView):
     def __init__(self):
         self.default_page = "1"
         self.default_page_size = "10"
+    
+
+    def get_object(self, cafe_no):
+        try:
+            return CafeMain.objects.get(pk=cafe_no)
+        except CafeMain.DoesNotExist:
+            return Http404
 
     """
     HTTP Method : GET
@@ -33,11 +45,9 @@ class CafeLV(APIView):
         tags=['cafe']
     )
     def get(self, request):
-        print(request)
         page = request.GET.get("page", self.default_page)
         page_size = request.GET.get("page_size", self.default_page_size)
 
-        print(page, page_size)
         # 숫자 에러 처리
         if page.isnumeric():
             page = int(page or 1)
@@ -55,77 +65,113 @@ class CafeLV(APIView):
         """
             주소 데이터가 없는 경우 처리를 해야함
         """
-        # queryset = CafeMain.objects.select_related('cafe_id')
-        # print("############### query set")
-        # print(queryset)
+        # Product.objects.select_related('sub_category__main_category').filter(main_category_id=1)
+        queryset = CafeMain.objects.select_related('cafe_address__cafe_id', 'cafe_franchise__cafe_id')
+        print("############### query set")
+        print(queryset)
+        for _queryset in queryset:
+            _queryset.cafe_address
+            
+        serializer = serializers.CafeSerializers(queryset, many=True)
+
+        # queryset = CafeMain.objects.all()[offset_cnt:limit_cnt]
         # serializer = serializers.CafeSerializers(queryset, many=True)
 
-        queryset = CafeMain.objects.all()
-        serializer = serializers.CafeSerializers(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-    """
+    '''
     HTTP Method : POST
     Parameter Example : 
         {
-            "name_kor": "스타벅스 정발산2점",
-            "name_eng": "starbucks jungbalsan2",
-            "tel_num": "031-941-1112",
+            "address": {
+                "latitude": "1.1",
+                "longitude": "1.1",
+                "sido": "Goyang-si",
+                "sigungu": "Ilsandong-gu",
+                "doro": "sanduro",
+                "doro_code": "111",
+                "sangse": "sangse"
+            },
+            "main_name": "스타벅스 정발산2점",
+            "is_operated": "True",
+            "is_franchise": "True",
+            "franchise": {
+                "branch_name": "스타벅스"
+            },
+            "phone": "031-941-1112",
+            "hours": {
+                "mon": "07:00 ~ 20:00",
+                "tue": "07:00 ~ 20:00",
+                "wed": "07:00 ~ 20:00",
+                "thur": "07:00 ~ 20:00",
+                "fri": "07:00 ~ 20:00",
+                "sat": "07:00 ~ 20:00",
+                "sun": "07:00 ~ 20:00"
+            },
             "sns_url": "https://facebook.com/starbucks_jungbalsan2",
-            "open_time": "07:00:00"
+            "registrant": "sunhye",
+            "sub_names": [
+                {
+                    "sub_name": "starbucks"
+                }
+            ]
         }
-    """
+    '''
     @swagger_auto_schema(tags=['카페 데이터를 추가 합니다.'], responses={200: 'Success'}, request_body=serializers.CafeSerializers)
     def post(self, request):
         data = request.data
 
         # 프랜차이즈라고 표기했으나 프랜차이즈 데이터가 없는 경우
-        if data['is_franchised'] == True and not data.get('franchise'):
+        if data['is_franchise'] == True and not data.get('franchise'):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
+        # sub_name 3개 이상 저장되었을 때 에러 처리
+        if data.get('sub_names'):
+            sub_names = data.get('sub_names')
+            if len(sub_names) > 3:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
         cafemain_serializer = serializers.CafeSerializers(data=data)
+
         if cafemain_serializer.is_valid():
             cafemain_serializer.save()
-
-        # return JsonResponse(cafemain_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        cafe_id = int(cafemain_serializer.data['cafe_id'])
-        if data.get('franchise'):
-            caferanchise_data = data.get('franchise')
-            caferanchise_data['cafe_id'] = cafe_id
-            cafefranchise_serializer = serializers.CafeFranchiseSerializers(data=caferanchise_data)
-            print(cafefranchise_serializer.is_valid())
-            if cafefranchise_serializer.is_valid():
-                cafefranchise_serializer.save()
+        else: # 카페 메인 데이터가 저장되지 않으면 에러 띄우고 종료
+            return JsonResponse(cafemain_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        cafeaddress_serializer = {}
+        cafe_id = int(cafemain_serializer.data['cafe_id'])
+
         if data.get('address'):
             cafeaddress_data = data.get('address')
             cafeaddress_data['cafe_id'] = cafe_id
+            print(cafeaddress_data)
             cafeaddress_serializer = serializers.CafeAddressSerializer(data=cafeaddress_data)
             if cafeaddress_serializer.is_valid():
                 cafeaddress_serializer.save()
+            else: # 주소 데이터에서 에러나면 main 데이터 삭제
+                cafe_main = self.get_object(cafe_id)
+                cafe_main.delete()
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+
+        if data.get('sub_names'):
+            # 서브네임 여러개일 때 처리
+            for _sub_name in sub_names:
+                cafe_sub_name_data = _sub_name
+                cafe_sub_name_data['cafe_id'] = cafe_id
+                cafesubname_serializer = serializers.CafeSubNameSerializer(data=cafe_sub_name_data)
+                if cafesubname_serializer.is_valid():
+                    cafesubname_serializer.save()
+
+
+        if data.get('franchise'):
+            data['franchise']['cafe_id'] = cafe_id
+            cafefranchise_serializer = serializers.CafeFranchiseSerializers(data=data['franchise'])
+
+            if cafefranchise_serializer.is_valid():
+                cafefranchise_serializer.save()
 
         return Response(cafemain_serializer.data, status=status.HTTP_201_CREATED)
 
-
-
-        # post_serializer = serializers.CafeSerializers(data=request.data)
-        # if post_serializer.is_valid():
-        #     post_serializer.save()
-
-        #     # 카페 데이터 저장 시 주소 데이터도 같이 저장할 수 있도록 처리
-        #     post_serializer = serializers.CafeAddressSerializer(data=request.data)
-        #     if post_serializer.is_valid():
-        #         post_serializer.save()
-        #         return Response(post_serializer.data, status = status.HTTP_201_CREATED)
-        #     else:
-        #         return Response(post_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        #     # return Response(post_serializer.data, status = status.HTTP_201_CREATED)
-
-        # else:
-        #     return Response(post_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CafeDetailView(APIView):
