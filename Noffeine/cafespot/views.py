@@ -310,3 +310,7 @@ class CafeAddressDV(APIView):
             cafe_address_object = CafeAddress.objects.get(id=cafe_no)
             cafe_address_object.delete()
             return Response("test ok", status=status.HTTP_200_OK)
+
+class Test:
+    def test():
+        print("remote")
